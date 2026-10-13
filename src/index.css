@@ -1,0 +1,129 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: #0d0e11;
+    color: #e2e8f0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2a2d35;
+    border-radius: 2px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3a3f4a;
+  }
+}
+
+@layer components {
+  .code-block {
+    @apply bg-[#0a0b0e] border border-[#2a2d35] rounded-lg font-mono text-sm overflow-x-auto;
+  }
+
+  .sidebar-link {
+    @apply flex items-center gap-3 px-3 py-2 rounded-md text-sm text-[#8b95a5] hover:text-[#e2e8f0] hover:bg-[#1e2028] transition-all duration-150 cursor-pointer select-none;
+  }
+
+  .sidebar-link.active {
+    @apply text-[#e2e8f0] bg-[#1e2028];
+  }
+
+  .panel-tab {
+    @apply flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-all duration-150 cursor-pointer;
+  }
+
+  .panel-tab.active {
+    @apply bg-[#1e2028] text-[#e2e8f0];
+  }
+
+  .panel-tab:not(.active) {
+    @apply text-[#8b95a5] hover:text-[#e2e8f0] hover:bg-[#1a1c22];
+  }
+
+  .accordion-item {
+    @apply border-b border-[#2a2d35] last:border-b-0;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #2a2d35 transparent;
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, #4f8ef7, #34d399);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+/* Syntax highlighting */
+.token-keyword { color: #c792ea; }
+.token-string  { color: #c3e88d; }
+.token-comment { color: #546e7a; font-style: italic; }
+.token-number  { color: #f78c6c; }
+.token-function { color: #82aaff; }
+.token-operator { color: #89ddff; }
+.token-property { color: #f07178; }
+
+/* Chat message animation */
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.message-enter {
+  animation: fadeSlideIn 0.2s ease-out forwards;
+}
+
+/* Typing indicator */
+@keyframes blink {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
+}
+.typing-dot:nth-child(1) { animation: blink 1.2s 0.0s infinite; }
+.typing-dot:nth-child(2) { animation: blink 1.2s 0.2s infinite; }
+.typing-dot:nth-child(3) { animation: blink 1.2s 0.4s infinite; }
+
+
+
+/* Vertical text rotation for collapsed panel labels */
+.vertical-label {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  user-select: none;
+}
+
+/* Glow pulse on thinking steps */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(79, 142, 247, 0); }
+  50% { box-shadow: 0 0 8px 2px rgba(79, 142, 247, 0.15); }
+}
+.thinking-glow {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
