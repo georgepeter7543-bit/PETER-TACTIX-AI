@@ -77,9 +77,11 @@ export async function callLLM({ systemInstruction = SYSTEM_PERSONA, messages = [
       throw new Error(data.error)
     }
 
-    if (data.text && data.text.trim()) {
+    const replyText = (data.reply || data.text || '').trim()
+    if (replyText) {
       return {
-        text: data.text.trim(),
+        text: replyText,
+        reply: replyText,
         provider: data.provider || 'Google Gemini',
       }
     }
