@@ -1,6 +1,6 @@
 /**
- * PETER TACTIX AI — Dynamic AI Engine
- * All responses come from live Gemini API via the secure /api/chat backend.
+ * peter chatbot — Dynamic AI Engine
+ * All responses come from live AI backend via the secure /api/chat.
  * Zero static templates. Zero hardcoded mock replies.
  */
 
@@ -8,7 +8,7 @@ import { performLiveWebSearch } from './searchService.js'
 
 // ── System Persona ────────────────────────────────────────────
 export const SYSTEM_PERSONA =
-  'You are PETER TACTIX AI, an intelligent, empathetic, and multi-tasking AI workspace built by Peter George Peter. You understand user intent natively. Answer all questions naturally, directly, and accurately.'
+  'You are peter chatbot, an intelligent, conversational, and helpful AI assistant built by Peter George Peter. You understand user intent natively. Answer all questions naturally, directly, and accurately.'
 
 // ── Intent Detection (for search grounding only) ─────────────
 export function detectQueryIntent(prompt, explicitMode) {
@@ -50,7 +50,7 @@ export async function callLLM({ systemInstruction = SYSTEM_PERSONA, messages = [
     systemInstruction,
   }
 
-  // 60-second timeout — generous enough for slow Gemini calls + web search context
+  // 60-second timeout — generous enough for slow calls + web search context
   const ctrl = new AbortController()
   const tid  = setTimeout(() => ctrl.abort(), 60_000)
 
@@ -93,11 +93,11 @@ export async function callLLM({ systemInstruction = SYSTEM_PERSONA, messages = [
 
     const replyText = (data.reply || data.text || '').trim()
     if (replyText) {
-      console.log(`[aiEngine] ✔ Got reply (${replyText.length} chars) via ${data.provider || 'Gemini'}`)
+      console.log(`[aiEngine] ✔ Got reply (${replyText.length} chars) via ${data.provider || 'peter AI'}`)
       return {
         text:     replyText,
         reply:    replyText,
-        provider: data.provider || 'Google Gemini',
+        provider: data.provider || 'peter AI',
       }
     }
 
@@ -155,7 +155,7 @@ export async function generateAIResponseAsync(
     }
 
     const searchElapsed = ((Date.now() - t0) / 1000).toFixed(1)
-    if (onStatusUpdate) onStatusUpdate('Synthesising live web context with Gemini…')
+    if (onStatusUpdate) onStatusUpdate('Synthesising web context…')
 
     const webSystemInstruction = `${SYSTEM_PERSONA}
 
@@ -189,8 +189,8 @@ ${searchContext
     }
   }
 
-  // ── GENERAL / CODE / BUILD: Direct Gemini answer ──────────
-  if (onStatusUpdate) onStatusUpdate('Thinking with Gemini…')
+  // ── GENERAL / CODE / BUILD: Direct answer ──────────
+  if (onStatusUpdate) onStatusUpdate('Thinking…')
 
   const messages = [
     ...histMessages,

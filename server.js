@@ -44,7 +44,7 @@ app.use((req, _res, next) => {
 
 // ── System Persona ───────────────────────────────────────────
 const SYSTEM_PERSONA =
-  'You are PETER TACTIX AI, an intelligent, empathetic, and multi-tasking AI workspace built by Peter George Peter. You understand user intent natively. Answer all questions naturally, directly, and accurately.'
+  'You are peter chatbot, an intelligent, conversational, and helpful AI assistant built by Peter George Peter. You understand user intent natively. Answer all questions naturally, directly, and accurately.'
 
 // ── Model fallback order ─────────────────────────────────────
 // Ordered from most-preferred to least-preferred.
@@ -176,15 +176,15 @@ app.post('/api/chat', async (req, res) => {
           const replyText = await callGemini(currentKey, model, formattedContents, systemPrompt)
 
           if (replyText) {
-            console.log(`[/api/chat] ✔ Success via ${model} — ${replyText.length} chars`)
+            console.log(`[/api/chat] ✔ Success — ${replyText.length} chars`)
             return res.json({
               reply:    replyText,
               text:     replyText,
-              provider: `Google Gemini (${model})`,
+              provider: 'peter AI',
             })
           }
 
-          console.warn(`[/api/chat] ✗ ${model} returned empty text — trying next`)
+          console.warn(`[/api/chat] ✗ Model returned empty text — trying next`)
         } catch (modelErr) {
           const errMsg = (modelErr.message || '').slice(0, 120)
           lastError    = modelErr.message || errMsg
@@ -195,14 +195,14 @@ app.post('/api/chat', async (req, res) => {
           const isNotFound    = errMsg.includes('404') || errMsg.toLowerCase().includes('not found')
 
           if (isRateLimit) {
-            console.warn(`[/api/chat] ✗ Rate limit on key #${kIdx + 1} / ${model} — rotating key`)
+            console.warn(`[/api/chat] ✗ Rate limit on key #${kIdx + 1} — rotating key`)
             break  // move to next key
           } else if (isNotFound) {
-            console.warn(`[/api/chat] ✗ ${model} not available for this key (404) — skipping`)
+            console.warn(`[/api/chat] ✗ Model endpoint not available (404) — skipping`)
           } else if (isUnavailable) {
-            console.warn(`[/api/chat] ✗ ${model} temporarily unavailable (503) — trying next`)
+            console.warn(`[/api/chat] ✗ Model temporarily unavailable (503) — trying next`)
           } else {
-            console.warn(`[/api/chat] ✗ ${model} error: ${errMsg}`)
+            console.warn(`[/api/chat] ✗ Model error: ${errMsg}`)
           }
         }
       }
@@ -216,7 +216,7 @@ app.post('/api/chat', async (req, res) => {
 
     const errorMessage = isAuthError
       ? 'Server API Key not configured or invalid'
-      : lastError || 'All Gemini models exhausted — please try again'
+      : lastError || 'AI engine is currently busy — please try again in a moment'
 
     console.error('[/api/chat] ✗ All models failed. Last error:', lastError)
     return res.status(500).json({ error: errorMessage })
@@ -240,10 +240,18 @@ app.use((err, _req, res, _next) => {
 })
 
 // ── Start ─────────────────────────────────────────────────────
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log('═══════════════════════════════════════════════════')
   console.log(`  PETER TACTIX AI backend  →  http://localhost:${PORT}`)
   console.log(`  Routes: GET /api/health | GET /api/search | POST /api/chat`)
   console.log(`  API keys loaded: ${GEMINI_KEYS.length} | Models: ${MODEL_FALLBACK_ORDER.length}`)
   console.log('═══════════════════════════════════════════════════')
+})
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`[PETER TACTIX AI] Port ${PORT} is already in use.`)
+  } else {
+    console.error('[PETER TACTIX AI] Server startup error:', err)
+  }
 })

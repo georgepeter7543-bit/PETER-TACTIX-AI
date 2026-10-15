@@ -186,7 +186,8 @@ export default function RightPanel({
   onToggle,
   isMaximized,
   onToggleMaximize,
-  stats
+  stats,
+  isMobile = false,
 }) {
   const [activeTab, setActiveTab] = useState('tasks')
 
@@ -388,16 +389,28 @@ export default function RightPanel({
   // ── Standard side-panel state ──────────────────────────────
   return (
     <aside
-      style={{
-        width: isHidden ? 0 : 320,
-        minWidth: isHidden ? 0 : 320,
-        borderLeftWidth: isHidden ? 0 : 1,
-        transition: 'width 280ms cubic-bezier(0.4, 0, 0.2, 1), min-width 280ms cubic-bezier(0.4, 0, 0.2, 1), border-left-width 280ms cubic-bezier(0.4, 0, 0.2, 1)',
-      }}
-      className="flex-shrink-0 flex flex-col bg-[#111318] border-[#2a2d35] overflow-hidden"
+      style={
+        isMobile
+          ? {
+              transform: isHidden ? 'translateX(100%)' : 'translateX(0)',
+              transition: 'transform 280ms cubic-bezier(0.4, 0, 0.2, 1)',
+              width: 'min(340px, 90vw)',
+            }
+          : {
+              width: isHidden ? 0 : 320,
+              minWidth: isHidden ? 0 : 320,
+              borderLeftWidth: isHidden ? 0 : 1,
+              transition:
+                'width 280ms cubic-bezier(0.4, 0, 0.2, 1), min-width 280ms cubic-bezier(0.4, 0, 0.2, 1), border-left-width 280ms cubic-bezier(0.4, 0, 0.2, 1)',
+            }
+      }
+      className={`
+        flex-shrink-0 flex flex-col bg-[#111318] border-[#2a2d35] overflow-hidden
+        ${isMobile ? 'fixed inset-y-0 right-0 z-50 shadow-2xl border-l' : ''}
+      `}
     >
-      {/* Inner wrapper keeps content at 320px width during collapse transition */}
-      <div className="flex flex-col h-full" style={{ width: 320, minWidth: 320 }}>
+      {/* Inner wrapper keeps content width during collapse transition */}
+      <div className="flex flex-col h-full w-full" style={isMobile ? undefined : { width: 320, minWidth: 320 }}>
         {panelContent}
       </div>
     </aside>

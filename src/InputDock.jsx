@@ -1,21 +1,23 @@
-import { useRef, useEffect, useCallback } from 'react'
+import { useRef, useEffect, useCallback, useState } from 'react'
 import {
-  Send, Mic, MicOff, ChevronDown, AtSign, Slash,
-  AlertCircle, X
+  Plus, Mic, MicOff, ArrowUp, Brain, X, FileText, AlertCircle
 } from 'lucide-react'
-import { MODE_LABELS } from './utils.js'
 import { useSpeechRecognition } from './useSpeechRecognition.js'
 
 export default function InputDock({
   value,
   onChange,
   onSend,
-  mode,
-  onModeChange,
   isThinking,
+  attachments = [],
+  onAddAttachments,
+  onRemoveAttachment,
+  placeholder = 'Ask peter...',
 }) {
-  const ref = useRef(null)
+  const textareaRef = useRef(null)
+  const fileInputRef = useRef(null)
   const textBeforeSpeechRef = useRef('')
+  const [thinkMode, setThinkMode] = useState(false)
 
   // Handle live transcript stream from SpeechRecognition
   const handleTranscript = useCallback((transcriptText, isFinal) => {
@@ -27,7 +29,6 @@ export default function InputDock({
     }
   }, [onChange])
 
-  // Custom hook with comprehensive lifecycle and error guardrails
   const {
     isListening,
     isSupported,
@@ -36,28 +37,27 @@ export default function InputDock({
     toggleListening,
   } = useSpeechRecognition({ onTranscript: handleTranscript })
 
-  // Auto-dismiss transient speech errors after 7 seconds
   useEffect(() => {
     if (errorMessage) {
-      const timer = setTimeout(() => {
-        clearError()
-      }, 7000)
+      const timer = setTimeout(() => clearError(), 6000)
       return () => clearTimeout(timer)
     }
   }, [errorMessage, clearError])
 
   // Auto-resize textarea to content
   useEffect(() => {
-    if (ref.current) {
-      ref.current.style.height = 'auto'
-      ref.current.style.height = Math.min(ref.current.scrollHeight, 180) + 'px'
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 180) + 'px'
     }
   }, [value])
 
   const handleKey = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      onSend()
+      if ((value.trim() || attachments.length > 0) && !isThinking) {
+        onSend()
+      }
     }
   }
 
@@ -68,132 +68,168 @@ export default function InputDock({
     toggleListening()
   }
 
-  const modes = Object.entries(MODE_LABELS)
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length > 0 && onAddAttachments) {
+      onAddAttachments(files)
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const hasText = value.trim().length > 0 || attachments.length > 0
+  const canSend = hasText && !isThinking
 
   return (
-    <div className="border-t border-[#2a2d35] bg-[#0d0e11] px-4 py-3">
-      {/* Speech Recognition Error Banner */}
+    <div className="w-full">
+      {/* Speech error toast */}
       {errorMessage && (
-        <div className="flex items-center justify-between px-3.5 py-2 mb-2 rounded-lg bg-[#2b1616] border border-[#f87171]/40 text-xs text-[#fca5a5] animate-in fade-in duration-200">
-          <div className="flex items-center gap-2 min-w-0">
-            <AlertCircle size={14} className="text-[#f87171] flex-shrink-0" />
+        <div className="flex items-center justify-between px-3.5 py-1.5 mb-2 rounded-full bg-[#2a1717] border border-red-500/30 text-xs text-red-300">
+          <div className="flex items-center gap-2 truncate">
+            <AlertCircle size={14} className="text-red-400 flex-shrink-0" />
             <span className="truncate">{errorMessage}</span>
           </div>
           <button
             onClick={clearError}
-            className="p-1 rounded hover:bg-[#3d1f1f] text-[#fca5a5] hover:text-white transition-colors flex-shrink-0 ml-2"
-            title="Dismiss notification"
+            className="p-1 text-red-400 hover:text-white"
           >
             <X size={12} />
           </button>
         </div>
       )}
 
-      <div className="relative flex flex-col bg-[#111318] border border-[#2a2d35] rounded-xl overflow-hidden focus-within:border-[#3a3f4a] transition-colors">
-        {/* Textarea */}
-        <textarea
-          ref={ref}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={handleKey}
-          rows={1}
-          placeholder={isListening ? "Listening to your voice..." : "Ask anything, @ to mention, / for actions"}
-          disabled={isThinking}
-          className="w-full bg-transparent text-sm text-[#e2e8f0] placeholder-[#4a5568] px-4 pt-3 pb-2 resize-none outline-none leading-relaxed scrollbar-thin disabled:opacity-50"
-        />
-
-        {/* Bottom toolbar */}
-        <div className="flex items-center gap-2 px-3 pb-2.5 pt-1">
-          {/* Mention & Actions hint icons */}
-          <button className="p-1.5 rounded text-[#4a5568] hover:text-[#8b95a5] hover:bg-[#1e2028] transition-colors" title="Mention (@)">
-            <AtSign size={14} />
-          </button>
-          <button className="p-1.5 rounded text-[#4a5568] hover:text-[#8b95a5] hover:bg-[#1e2028] transition-colors" title="Actions (/)">
-            <Slash size={14} />
-          </button>
-
-          {/* Model indicator */}
-          <div
-            className="flex items-center gap-1.5 ml-1 px-2.5 py-1 rounded-md bg-[#1a1d24] border border-[#2a2d35] text-xs text-[#8b95a5] select-none"
-            title="PETER TACTIX AI — Secure Gemini Backend Active"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-[#34d399]" />
-            <span className="font-mono text-[11px] text-[#c9d1d9]">Gemini Core</span>
+      {/* ChatGPT Input Pill Container */}
+      <div className="relative flex flex-col bg-[#212121] border border-[#2f2f2f] rounded-3xl p-1.5 sm:p-2 shadow-2xl transition-all focus-within:border-[#444444]">
+        {/* Attachment badges */}
+        {attachments.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 px-3 pt-1.5 pb-1">
+            {attachments.map((att, idx) => (
+              <div
+                key={idx}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#2a2a2a] border border-[#383838] text-xs text-[#ececec]"
+              >
+                <FileText size={12} className="text-[#d49a3d]" />
+                <span className="truncate max-w-[140px] font-mono text-[11px]">{att.name}</span>
+                {onRemoveAttachment && (
+                  <button
+                    type="button"
+                    onClick={() => onRemoveAttachment(idx)}
+                    className="p-0.5 rounded-full hover:bg-white/10 text-neutral-400 hover:text-white"
+                  >
+                    <X size={11} />
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
+        )}
 
-          {/* Mode selector */}
-          <div className="relative group">
-            <button className="flex items-center gap-1 px-2 py-1 rounded-md bg-[#1a1d24] border border-[#2a2d35] text-xs text-[#8b95a5] hover:text-[#e2e8f0] hover:border-[#3a3f4a] transition-colors">
-              <span className={MODE_LABELS[mode]?.color || 'text-text-secondary'}>
-                {MODE_LABELS[mode]?.label || 'Default'}
-              </span>
-              <ChevronDown size={11} />
-            </button>
-            <div className="absolute bottom-full left-0 mb-1 hidden group-hover:flex flex-col bg-[#1a1d24] border border-[#2a2d35] rounded-lg overflow-hidden shadow-xl z-10 min-w-[120px]">
-              {modes.map(([key, { label, color }]) => (
-                <button
-                  key={key}
-                  onClick={() => onModeChange(key)}
-                  className={`px-3 py-2 text-xs text-left hover:bg-[#2a2d35] transition-colors ${mode === key ? 'bg-[#2a2d35]' : ''} ${color}`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Active Listening Indicator */}
-          {isListening && (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/30 text-[11px] text-red-400 font-mono animate-pulse">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-              <span>Listening...</span>
-            </div>
-          )}
-
-          <div className="flex-1" />
-
-          {/* Voice Microphone Input with Guardrails */}
+        <div className="flex items-center gap-1 sm:gap-2 px-1">
+          {/* Left: Plus [+] Button matching ChatGPT */}
           <button
             type="button"
-            onClick={handleMicClick}
-            disabled={!isSupported || isThinking}
-            className={`p-1.5 rounded transition-all duration-150 ${
-              isListening
-                ? 'bg-red-500/20 text-red-400 border border-red-500/40 shadow-sm shadow-red-500/20'
-                : isSupported
-                ? 'text-[#4a5568] hover:text-[#8b95a5] hover:bg-[#1e2028]'
-                : 'text-[#32363e] cursor-not-allowed opacity-50'
-            }`}
-            title={
-              !isSupported
-                ? 'Speech recognition not supported in this browser'
-                : isListening
-                ? 'Listening... Click to stop'
-                : 'Voice input (Click to speak)'
-            }
+            onClick={() => fileInputRef.current?.click()}
+            className="p-2 rounded-full text-white hover:bg-[#2f2f2f] active:scale-95 transition-all flex-shrink-0 touch-manipulation"
+            title="Attach files"
+            aria-label="Attach files"
           >
-            {isListening ? (
-              <MicOff size={14} className="animate-pulse" />
-            ) : (
-              <Mic size={14} />
-            )}
+            <Plus size={19} />
           </button>
 
-          {/* Send */}
-          <button
-            onClick={onSend}
-            disabled={!value.trim() || isThinking}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#4f8ef7] hover:bg-[#5a96f8] text-white text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <Send size={12} />
-            <span>Send</span>
-          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            onChange={handleFileChange}
+            className="hidden"
+          />
+
+          {/* Center: Textarea input matching ChatGPT */}
+          <textarea
+            ref={textareaRef}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={handleKey}
+            rows={1}
+            placeholder={isListening ? 'Listening…' : placeholder}
+            disabled={isThinking}
+            className="flex-1 bg-transparent text-[15px] sm:text-[15.5px] text-[#ececec] placeholder-[#8e8e8e] resize-none outline-none leading-relaxed scrollbar-thin disabled:opacity-50 min-h-[38px] max-h-[160px] py-1.5 px-1 font-sans"
+          />
+
+          {/* Right: Think Pill, Mic Icon, and Golden Audio/Send Circle matching ChatGPT */}
+          <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
+            {/* Think Pill Button (ChatGPT Think button) */}
+            <button
+              type="button"
+              onClick={() => setThinkMode(m => !m)}
+              className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                thinkMode
+                  ? 'bg-[#333333] text-[#d49a3d] border border-[#d49a3d]/40'
+                  : 'bg-[#2a2a2a] hover:bg-[#333333] text-neutral-300'
+              }`}
+              title="Toggle deep reasoning"
+            >
+              <Brain size={14} className={thinkMode ? 'text-[#d49a3d]' : 'text-neutral-400'} />
+              <span>Think</span>
+            </button>
+
+            {/* Microphone button */}
+            <button
+              type="button"
+              onClick={handleMicClick}
+              disabled={!isSupported || isThinking}
+              className={`p-2 rounded-full transition-all touch-manipulation active:scale-95 ${
+                isListening
+                  ? 'bg-red-500/20 text-red-400 animate-pulse'
+                  : isSupported
+                  ? 'text-[#8e8e8e] hover:text-white hover:bg-[#2f2f2f]'
+                  : 'text-[#444444] cursor-not-allowed opacity-40'
+              }`}
+              title={
+                !isSupported
+                  ? 'Speech recognition not supported in this browser'
+                  : isListening
+                  ? 'Listening… Click to stop'
+                  : 'Voice input'
+              }
+              aria-label="Voice input"
+            >
+              {isListening ? (
+                <MicOff size={18} className="text-red-400 animate-pulse" />
+              ) : (
+                <Mic size={18} />
+              )}
+            </button>
+
+            {/* Golden / Amber Voice Mode or Send Circle matching screenshot */}
+            <button
+              type="button"
+              onClick={canSend ? onSend : handleMicClick}
+              disabled={isThinking}
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150 shadow-md touch-manipulation active:scale-90 ${
+                canSend
+                  ? 'bg-[#d49a3d] hover:bg-[#e2a849] text-black cursor-pointer'
+                  : 'bg-[#d49a3d] hover:bg-[#e2a849] text-black'
+              }`}
+              title={canSend ? 'Send message' : 'Voice mode'}
+              aria-label={canSend ? 'Send message' : 'Voice mode'}
+            >
+              {canSend ? (
+                <ArrowUp size={18} className="text-black font-bold stroke-[2.5]" />
+              ) : (
+                /* Waveform audio bars matching ChatGPT voice mode */
+                <div className="flex items-center gap-[2.5px] h-3.5">
+                  <span className="w-[2.5px] h-2 bg-black rounded-full" />
+                  <span className="w-[2.5px] h-3.5 bg-black rounded-full" />
+                  <span className="w-[2.5px] h-2.5 bg-black rounded-full" />
+                  <span className="w-[2.5px] h-1.5 bg-black rounded-full" />
+                </div>
+              )}
+            </button>
+          </div>
         </div>
       </div>
-
-      <p className="text-center text-[10px] text-[#2a2d35] mt-2">
-        PETER TACTIX AI · Press Enter to send, Shift+Enter for newline
-      </p>
     </div>
   )
 }
