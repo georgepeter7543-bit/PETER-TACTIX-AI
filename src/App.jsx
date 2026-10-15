@@ -211,14 +211,15 @@ export default function App() {
       console.error('AI execution error:', err)
       setThinking(false)
       setThinkingStatus(null)
+      const errorMsg = err?.message || 'Network error: Unable to reach PETER TACTIX AI backend server. Please check your internet connection or server logs and try again.'
       const fallbackMsg = {
         id:          generateId(),
         role:        'assistant',
-        content:     '⚠️ Network error: Unable to reach PETER TACTIX AI backend server. Please check your internet connection or server logs and try again.',
-        text:        '⚠️ Network error: Unable to reach PETER TACTIX AI backend server. Please check your internet connection or server logs and try again.',
+        content:     errorMsg.startsWith('⚠️') ? errorMsg : `⚠️ ${errorMsg}`,
+        text:        errorMsg.startsWith('⚠️') ? errorMsg : `⚠️ ${errorMsg}`,
         time:        now(),
         timestamp:   Date.now(),
-        thought:     'Unable to reach PETER TACTIX AI backend server.',
+        thought:     errorMsg,
         thoughtTime: '—',
         workTime:    '—',
       }
