@@ -303,7 +303,7 @@ export default function App() {
   const hasMessages = messages.length > 0 || isThinking
 
   return (
-    <div className="h-screen h-[100dvh] w-full bg-[#000000] text-[#ececec] flex flex-col relative overflow-hidden select-none font-sans">
+    <div className="w-full bg-[#000000] text-[#ececec] flex flex-col overflow-hidden select-none font-sans" style={{ height: '100dvh', minHeight: '-webkit-fill-available' }}>
 
       {/* ── Top Header Bar (Full Black ChatGPT Style) ── */}
       <header className="w-full flex items-center justify-between px-3 sm:px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2.5 bg-[#000000] z-20 flex-shrink-0 select-none">
@@ -347,7 +347,7 @@ export default function App() {
       <main className="flex-1 flex flex-col min-h-0 w-full relative overflow-hidden bg-[#000000]">
         {!hasMessages ? (
           /* Empty State: Centered Greeting like ChatGPT */
-          <div className="flex-1 flex flex-col items-center justify-center relative select-none px-4 my-auto">
+          <div className="flex-1 flex flex-col items-center justify-center relative select-none px-4">
             <h1 className="text-2xl sm:text-3xl font-medium text-[#ececec] text-center tracking-normal px-4 max-w-xl leading-snug">
               What can peter help you with today?
             </h1>
@@ -366,28 +366,30 @@ export default function App() {
             </div>
           </div>
         )}
+      </main>
 
-        {/* ── Bottom Input Dock & Disclaimer (ChatGPT Style) ── */}
-        <div className="w-full bg-[#000000] px-3 sm:px-4 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-1 flex-shrink-0 z-20">
-          <div className="w-full max-w-3xl mx-auto flex flex-col">
-            <InputDock
-              value={input}
-              onChange={setInput}
-              onSend={handleSend}
-              isThinking={isThinking}
-              attachments={attachments}
-              onAddAttachments={handleAddAttachments}
-              onRemoveAttachment={handleRemoveAttachment}
-              placeholder="Ask peter..."
-            />
+      {/* ── Bottom Input Dock (flex-shrink-0 direct child, always above home bar) ── */}
+      <div className="flex-shrink-0 w-full bg-[#000000] px-3 sm:px-4 pt-2 z-20"
+        style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
+      >
+        <div className="w-full max-w-3xl mx-auto flex flex-col">
+          <InputDock
+            value={input}
+            onChange={setInput}
+            onSend={handleSend}
+            isThinking={isThinking}
+            attachments={attachments}
+            onAddAttachments={handleAddAttachments}
+            onRemoveAttachment={handleRemoveAttachment}
+            placeholder="Ask peter..."
+          />
 
-            {/* Disclaimer directly below input pill matching ChatGPT screenshot */}
-            <div className="pt-2 pb-0.5 text-center text-[11px] sm:text-xs text-[#8e8e8e] select-none">
-              peter chatbot can make mistakes. Built by <span className="text-neutral-400 font-normal">Peter George Peter</span>.
-            </div>
+          {/* Developer footer — sits inside bottom flex container, above phone home bar */}
+          <div className="pt-2 pb-0.5 text-center text-[11px] sm:text-xs text-[#8e8e8e] select-none">
+            Built by <span className="text-neutral-400 font-normal">Peter George Peter</span>.
           </div>
         </div>
-      </main>
+      </div>
 
       {/* ── Slide-Over Sidebar Drawer (ChatGPT Style) ── */}
       {drawerOpen && (
