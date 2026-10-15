@@ -41,16 +41,24 @@ export function detectQueryIntent(prompt, explicitMode) {
 }
 
 // ── Core LLM Caller ──────────────────────────────────────────
+// Sends messages to the secure Express backend at /api/chat.
+// Uses a relative URL so it works via Vite proxy in dev
+// and via the same origin in production.
 export async function callLLM({ systemInstruction = SYSTEM_PERSONA, messages = [] }) {
   const payload = {
     messages: messages.filter(m => (m.content || m.text || '').trim()),
     systemInstruction,
   }
 
-  // ── Route directly to secure backend /api/chat endpoint ──────
+  // 60-second timeout — generous enough for slow Gemini calls + web search context
   const ctrl = new AbortController()
-  // Generous 60-second timeout for model completion and live web search context
-  const tid = setTimeout(() => ctrl.abort(), 60_000)
+  const tid  = setTimeout(() => ctrl.abort(), 60_000)
+
+  // ── DEBUG LOG: visible in the browser DevTools console ───────
+  console.log(
+    `[aiEngine] ▶ POST /api/chat — ${payload.messages.length} message(s)`,
+    payload.messages.map(m => `${m.role}: ${(m.content || m.text || '').slice(0, 40)}`)
+  )
 
   try {
     const res = await fetch('/api/chat', {
@@ -61,6 +69,8 @@ export async function callLLM({ systemInstruction = SYSTEM_PERSONA, messages = [
     })
     clearTimeout(tid)
 
+    console.log(`[aiEngine] ◀ HTTP ${res.status} from /api/chat`)
+
     if (!res.ok) {
       let errText = ''
       try {
@@ -69,19 +79,24 @@ export async function callLLM({ systemInstruction = SYSTEM_PERSONA, messages = [
       } catch {
         errText = await res.text().catch(() => '')
       }
-      throw new Error(errText || `Server responded with HTTP status ${res.status}`)
+      const msg = errText || `Server responded with HTTP status ${res.status}`
+      console.error('[aiEngine] ✗ Backend error:', msg)
+      throw new Error(msg)
     }
 
     const data = await res.json()
+
     if (data.error) {
+      console.error('[aiEngine] ✗ Backend returned error field:', data.error)
       throw new Error(data.error)
     }
 
     const replyText = (data.reply || data.text || '').trim()
     if (replyText) {
+      console.log(`[aiEngine] ✔ Got reply (${replyText.length} chars) via ${data.provider || 'Gemini'}`)
       return {
-        text: replyText,
-        reply: replyText,
+        text:     replyText,
+        reply:    replyText,
         provider: data.provider || 'Google Gemini',
       }
     }
@@ -182,13 +197,13 @@ ${searchContext
     { role: 'user', content: prompt },
   ]
 
-  const completion = await callLLM({ systemInstruction: SYSTEM_PERSONA, messages })
+  const completion   = await callLLM({ systemInstruction: SYSTEM_PERSONA, messages })
   const totalElapsed = ((Date.now() - t0) / 1000).toFixed(1)
-  const codeBlock = extractCodeBlock(completion.text)
+  const codeBlock    = extractCodeBlock(completion.text)
 
   // Heuristic type labeling for UI badge
   const lower = prompt.toLowerCase()
-  const type = lower.includes('build') || lower.includes('website') || lower.includes('html')
+  const type  = lower.includes('build') || lower.includes('website') || lower.includes('html')
     ? 'build'
     : lower.includes('debug') || lower.includes('error') || lower.includes('fix') || lower.includes('bug')
     ? 'debug'
