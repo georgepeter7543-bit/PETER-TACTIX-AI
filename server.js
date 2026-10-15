@@ -189,6 +189,19 @@ app.post('/api/chat', async (req, res) => {
   }
 })
 
+// ── Catch-All: Log & Return 404 for Unmatched Routes ────────
+app.use((req, res) => {
+  console.warn(`[PETER TACTIX AI] 404 — No route matched: ${req.method} ${req.originalUrl}`)
+  res.status(404).json({ error: `Route not found: ${req.method} ${req.originalUrl}` })
+})
+
+// ── Global Error Handler ─────────────────────────────────────
+app.use((err, req, res, _next) => {
+  console.error('[PETER TACTIX AI] Unhandled server error:', err)
+  res.status(500).json({ error: err.message || 'Internal server error' })
+})
+
 app.listen(PORT, () => {
   console.log(`[PETER TACTIX AI] Backend server running on http://localhost:${PORT}`)
+  console.log(`[PETER TACTIX AI] Routes: GET /api/health, GET /api/search, POST /api/chat`)
 })
